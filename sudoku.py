@@ -3,14 +3,29 @@ import requests
 from copy import deepcopy
 import sys
 
+# defining constants
 WIDTH = 550
 background_color = (251, 247, 245)
 original_grid_element_color = (52, 31, 151)
+# to adjust number positioning
 buffer = 5
 
-response = requests.get('https://sugoku.herokuapp.com/board?difficulty=easy')
-grid = response.json()['board']
-grid_original = deepcopy(grid)
+response = None
+grid = []
+grid_original = []
+
+
+def fetchGame():
+    global response
+    global grid
+    global grid_original
+    response = requests.get(
+        'https://sugoku.herokuapp.com/board?difficulty=easy')
+    grid = response.json()['board']
+    grid_original = deepcopy(grid)
+
+
+fetchGame()
 
 
 def reset(win, solve=False):
@@ -19,16 +34,19 @@ def reset(win, solve=False):
         grid = deepcopy(grid_original)
 
     win.fill(background_color)
+    # drawing grid
     for i in range(10):
         color = (0, 0, 0) if i % 3 == 0 else (128, 128, 128)
+        # vertical lines
         pygame.draw.line(win, color, (50+50*i, 50),
                          (50+50*i, 500), width=2)
+        # horizontal lines
         pygame.draw.line(win, color, (50, 50+50*i),
                          (500,  50+50*i), width=2)
     myfont = pygame.font.SysFont('Comic Sans MS', 35)
 
-    for i in range(len(grid)):
-        for j in range(len(grid)):
+    for i in range(9):
+        for j in range(9):
             if 0 < grid[i][j] < 10:
                 value = myfont.render(
                     str(grid[i][j]), True, original_grid_element_color)
@@ -141,8 +159,10 @@ def insert(win, position):
                 clear_highlight(win, i, j)
                 return
             if event.type == pygame.KEYDOWN:
+                # checking if the number can be changed
                 if grid_original[i-1][j-1] != 0:
                     return
+                # if the entered number is 0, clear the cell
                 if event.key == 48:
                     grid[i-1][j-1] = event.key - 48
                     pygame.draw.rect(
@@ -150,6 +170,7 @@ def insert(win, position):
                     clear_highlight(win, i, j)
                     pygame.display.update()
                     return
+                # if number between 1-9 is entered then assign the number to that cell.
                 if 0 < event.key - 48 < 10:
                     pygame.draw.rect(
                         win, background_color, (position[0]*50+buffer, position[1]*50+buffer, 50-2*buffer, 50-2*buffer))
@@ -175,11 +196,14 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 return
-            if event.type == pygame.KEYDOWN or event.type == pygame.KEYUP:
+            if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     reset(win)
                 if event.key == pygame.K_s:
                     solve(win)
+                if event.key == pygame.K_n:
+                    fetchGame()
+                    reset(win)
 
             if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
                 pos = pygame.mouse.get_pos()
